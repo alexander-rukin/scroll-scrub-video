@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>scroll-scrub-video - fixed background demo</title>
+<link rel="stylesheet" href="../dist/scroll-scrub-video.css">
+<style>
+  :root { --fg: #eef2f5; --muted: #9aa7b2; --accent: #1daf57; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body {
+    margin: 0;
+    background: #0d1013;
+    color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+            padding: 80px 24px; max-width: 760px; margin: 0 auto; }
+  h1 { font-size: clamp(38px, 7vw, 76px); line-height: 1.05; margin: 0 0 20px; letter-spacing: -.02em; }
+  h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 16px; }
+  p { color: var(--muted); max-width: 56ch; }
+  code { background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 4px; font-size: .9em; }
+  .hint { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 5;
+          color: var(--muted); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+
+  /* control panel */
+  .panel {
+    position: fixed; top: 16px; right: 16px; z-index: 10; width: 250px;
+    background: rgba(13,16,19,.88); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px; padding: 14px 16px; backdrop-filter: blur(8px);
+    font-size: 13px;
+  }
+  .panel h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .row { margin-bottom: 10px; }
+  .row label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .row output { color: var(--accent); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .prog { font-variant-numeric: tabular-nums; color: var(--accent); }
+  @media (max-width: 720px) { .panel { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- 1. The layers. Order matters: poster and video share one box, overlay sits on top. -->
+<img id="scrub-poster" class="ssv-layer ssv-poster" src="assets/demo-poster.jpg" alt="" aria-hidden="true">
+<video id="scrub-video" class="ssv-layer" muted playsinline preload="auto" aria-hidden="true">
+  <source src="assets/demo-scrub.mp4" type="video/mp4">
+</video>
+<div id="scrub-overlay" class="ssv-overlay" aria-hidden="true"></div>
+
+<!-- 2. Page content must be lifted above the fixed layers. -->
+<div class="ssv-content">
+  <section>
+    <h1>Scroll to scrub</h1>
+    <p>The background video is not playing. Its <code>currentTime</code> is mapped onto the
+       scroll position: the first <code>scrub</code> pixels of scrolling play the clip from the
+       first frame to the last. Scroll back up and it rewinds.</p>
+  </section>
+
+  <section>
+    <h2>Same clip, driven by you</h2>
+    <p>The white bar sweeping left to right is a playhead baked into the demo clip, so you can
+       see exactly where in the timeline the scroll position lands.</p>
+  </section>
+
+  <section>
+    <h2>Then it fades out</h2>
+    <p>Once the scrub range is done, <code>fade</code> takes the video and the overlay down over
+       another stretch of scrolling, so the rest of the page gets a clean background.</p>
+  </section>
+
+  <section>
+    <h2>End of the page</h2>
+    <p>Reload here: the video does not flash at full opacity, because the initial state is applied
+       synchronously before the first paint.</p>
+  </section>
+</div>
+
+<div class="hint">scroll ↓ &nbsp; progress <span class="prog" id="prog">0%</span></div>
+
+<div class="panel">
+  <h3>Live options</h3>
+  <div class="row">
+    <label>scrub <output id="o-scrub">120vh</output></label>
+    <input type="range" id="r-scrub" min="50" max="400" step="10" value="120">
+  </div>
+  <div class="row">
+    <label>videoOpacity <output id="o-op">0.5</output></label>
+    <input type="range" id="r-op" min="0" max="1" step="0.05" value="0.5">
+  </div>
+  <div class="row">
+    <label>smooth <output id="o-smooth">0</output></label>
+    <input type="range" id="r-smooth" min="0" max="0.95" step="0.05" value="0">
+  </div>
+  <div class="row">
+    <label>fade length <output id="o-fade">50vh</output></label>
+    <input type="range" id="r-fade" min="0" max="200" step="10" value="50">
+  </div>
+</div>
+
+<script src="../dist/scroll-scrub-video.js"></script>
+<script>
+// 3. Wire it up. This is the whole integration:
+//
+//    var scrubber = new ScrollScrubVideo({ video: '#scrub-video', scrub: '120vh' });
+//
+// Everything below only exists so the demo panel can rebuild it with new options.
+var scrubber = null;
+var prog = document.getElementById('prog');
+
+function build() {
+  var scrub = +document.getElementById('r-scrub').value;
+  var op = +document.getElementById('r-op').value;
+  var smooth = +document.getElementById('r-smooth').value;
+  var fade = +document.getElementById('r-fade').value;
+
+  document.getElementById('o-scrub').textContent = scrub + 'vh';
+  document.getElementById('o-op').textContent = op.toFixed(2);
+  document.getElementById('o-smooth').textContent = smooth.toFixed(2);
+  document.getElementById('o-fade').textContent = fade ? fade + 'vh' : 'off';
+
+  if (scrubber) scrubber.destroy();
+  scrubber = new ScrollScrubVideo({
+    video: '#scrub-video',
+    poster: '#scrub-poster',
+    overlay: '#scrub-overlay',
+    scrub: scrub + 'vh',
+    videoOpacity: op,
+    overlayOpacity: 1,
+    smooth: smooth,
+    posterFade: 0,                       // the poster is already gone after the first build
+    fade: fade ? { length: fade + 'vh', videoTo: 0, overlayTo: 0.15 } : false,
+    onProgress: function (p) { prog.textContent = Math.round(p * 100) + '%'; }
+  });
+}
+
+['r-scrub', 'r-op', 'r-smooth', 'r-fade'].forEach(function (id) {
+  document.getElementById(id).addEventListener('input', build);
+});
+build();
+
+// Friendly warning if the demo is opened through a server without Range support
+// (`python3 -m http.server`): seeking is silently ignored there. Use tools/serve.py.
+document.getElementById('scrub-video').addEventListener('loadeddata', function () {
+  if (this.seekable.length) return;
+  var b = document.createElement('div');
+  b.textContent = 'This server does not answer HTTP Range requests, so the video cannot be seeked. Run: python3 tools/serve.py 8000';
+  b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99;background:#b3261e;color:#fff;' +
+                    'padding:10px 16px;font-size:13px;text-align:center';
+  document.body.appendChild(b);
+});
+</script>
+</body>
+</html>

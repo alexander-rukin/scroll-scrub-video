@@ -1,0 +1,16 @@
+{
+  "name": "scroll-scrub-video",
+  "version": "1.0.0",
+  "description": "Drive an HTML5 video's playhead from the scroll position. No dependencies, no build step.",
+  "main": "dist/scroll-scrub-video.js",
+  "module": "dist/scroll-scrub-video.esm.js",
+  "style": "dist/scroll-scrub-video.css",
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build:esm": "node tools/build-esm.mjs",
+    "demo": "python3 tools/serve.py 8000"
+  },
+  "keywords": ["scroll", "video", "scrub", "scrollytelling", "parallax", "vanilla-js"],
+  "license": "MIT",
+  "sideEffects": false
+}

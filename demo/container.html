@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>scroll-scrub-video - pinned section demo</title>
+<link rel="stylesheet" href="../dist/scroll-scrub-video.css">
+<style>
+  :root { --fg: #eef2f5; --muted: #9aa7b2; --accent: #1daf57; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1013; color: var(--fg);
+         font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .prose { max-width: 700px; margin: 0 auto; padding: 22vh 24px; }
+  h1 { font-size: clamp(34px, 6vw, 64px); line-height: 1.06; margin: 0 0 18px; letter-spacing: -.02em; }
+  p { color: var(--muted); }
+  code { background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 4px; font-size: .9em; }
+
+  /* The tall block. 400vh of height == 300vh of scrubbing (height minus one viewport). */
+  #stage { min-height: 400vh; }
+  #stage .caption {
+    position: absolute; left: 50%; bottom: 8vh; transform: translateX(-50%);
+    z-index: 2; text-align: center; letter-spacing: .08em; text-transform: uppercase;
+    font-size: 13px; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.6);
+  }
+  #stage .ssv-overlay { background: rgba(13,16,19,.35); }
+</style>
+</head>
+<body>
+
+<div class="prose">
+  <h1>Pinned section</h1>
+  <p>Here the video is not a page background. It is pinned inside a tall block
+     (<code>mode: "container"</code>) and scrubs while that block passes through the viewport.
+     Above and below it, the page is ordinary content.</p>
+  <p>This page uses the markup-only path: no JS call at all, just
+     <code>data-scroll-scrub</code> attributes on the <code>&lt;video&gt;</code>.</p>
+</div>
+
+<div id="stage" class="ssv-stage">
+  <div class="ssv-sticky">
+    <video data-scroll-scrub
+           data-mode="container"
+           data-container="#stage"
+           data-scrub="auto"
+           data-overlay="#stage-overlay"
+           muted playsinline preload="auto" aria-hidden="true">
+      <source src="assets/demo-scrub.mp4" type="video/mp4">
+    </video>
+    <div id="stage-overlay" class="ssv-overlay" aria-hidden="true"></div>
+    <div class="caption">the block is 400vh tall - the clip is spread over all of it</div>
+  </div>
+</div>
+
+<div class="prose">
+  <h1>Back to normal flow</h1>
+  <p>The block released the sticky video once its bottom reached the bottom of the viewport,
+     and the page continues as usual.</p>
+</div>
+
+<script src="../dist/scroll-scrub-video.js"></script>
+</body>
+</html>

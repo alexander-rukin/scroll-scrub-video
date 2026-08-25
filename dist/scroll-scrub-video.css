@@ -1,0 +1,88 @@
+/*!
+ * scroll-scrub-video v1.0.0 - optional layout helpers.
+ * The JS only writes `opacity` and `currentTime`; positioning is entirely up to CSS.
+ * Use these classes as-is, or copy the two or three rules you actually need.
+ */
+
+/* ── Mode "fixed": full-viewport background layers ───────────────────────── */
+
+.ssv-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: -1;
+  will-change: opacity;
+  /* Safari: promote to its own layer so the fixed video does not repaint on scroll */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* The poster <img> sits on the exact same box as the video and is faded out
+   by the script once the first video frame is decoded. */
+.ssv-poster { }
+
+/* Tint / scrim between the video and the page content. */
+.ssv-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 23, 26, 0.5);
+  pointer-events: none;
+  z-index: 0;
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+/* Page content has to be lifted above the fixed layers. */
+.ssv-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Mode "container": the video is pinned inside a tall block ───────────── */
+
+/* The tall block. Its height is the scroll distance the scrub is spread over,
+   so `min-height: 300vh` == "three screens of scrolling". */
+.ssv-stage {
+  position: relative;
+  min-height: 300vh;
+}
+
+/* The sticky viewport-sized frame that holds the video. */
+.ssv-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.ssv-sticky > video,
+.ssv-sticky > .ssv-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  will-change: opacity;
+}
+
+.ssv-sticky > .ssv-overlay {
+  position: absolute;
+  z-index: 1;
+}
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+
+/* Scrubbing is driven by the user's own scrolling, so it is not "motion" in the
+   strict sense - but the script still freezes on a single frame when the OS asks
+   for reduced motion (option `respectReducedMotion`, on by default). */
+@media (prefers-reduced-motion: reduce) {
+  .ssv-layer,
+  .ssv-overlay {
+    transition: none !important;
+  }
+}
